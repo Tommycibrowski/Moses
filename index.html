@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moses vs Pharaoh — Exodus Battle</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Crimson+Pro:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#f0c030;--gold2:#c8a000;--sand:#f8e878;--deep:#181010;
+  --red:#e82010;--blue:#3090f0;--green:#38c838;
+  --hp-green:#58d858;--hp-yellow:#f8c800;--hp-red:#f02020;
+  --white:#f8f8e8;--gray:#b8b090;
+  --box-bg:#e8e0b0;--box-border:#806830;--box-dark:#503810;
+  --screen-bg:#182830;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a0808;font-family:'Press Start 2P',monospace;color:var(--white);min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden;}
+
+/* TITLE */
+#title-screen{min-height:100vh;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;text-align:center;position:relative;overflow:hidden;}
+#title-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(240,192,48,.12) 0%,transparent 60%),radial-gradient(ellipse at 20% 80%,rgba(48,144,240,.08) 0%,transparent 40%);pointer-events:none;}
+.title-logo{font-size:clamp(.9rem,2.5vw,1.5rem);color:var(--gold);text-shadow:4px 4px 0 var(--gold2),0 0 40px rgba(240,192,48,.5);line-height:1.7;margin-bottom:.5rem;animation:titlePulse 2s ease-in-out infinite alternate;}
+@keyframes titlePulse{from{text-shadow:4px 4px 0 var(--gold2),0 0 20px rgba(240,192,48,.4);}to{text-shadow:4px 4px 0 var(--gold2),0 0 60px rgba(240,192,48,.9);}}
+.title-sub{font-size:clamp(.45rem,1.3vw,.65rem);color:var(--sand);letter-spacing:.15em;margin-bottom:2rem;}
+.title-art{display:flex;gap:2.5rem;align-items:flex-end;justify-content:center;margin:1rem 0 1.5rem;}
+.title-btn{font-family:'Press Start 2P',monospace;font-size:clamp(.5rem,1.4vw,.7rem);background:var(--gold);color:var(--deep);border:4px solid var(--gold2);padding:.9rem 2rem;cursor:pointer;letter-spacing:.1em;box-shadow:4px 4px 0 var(--gold2);transition:transform .1s,box-shadow .1s;margin-bottom:1rem;}
+.title-btn:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--gold2);}
+.title-btn:active{transform:translate(4px,4px);box-shadow:none;}
+.press-start{font-size:.5rem;color:var(--gray);animation:blink 1.2s step-end infinite;}
+@keyframes blink{50%{opacity:0;}}
+
+/* GAME */
+#game-screen{display:none;width:100%;max-width:760px;padding:.75rem;flex-direction:column;}
+
+/* BATTLE SCENE */
+.battle-scene{width:100%;aspect-ratio:16/9;max-height:340px;background:var(--screen-bg);border:4px solid #304858;position:relative;overflow:hidden;flex-shrink:0;}
+.battle-scene::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#102030 0%,#1a3850 45%,#304060 45.1%,#182828 100%);}
+.ground{position:absolute;bottom:0;left:0;right:0;height:38%;background:linear-gradient(180deg,#806830 0%,#604820 40%,#402810 100%);}
+.ground::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:#c8a040;}
+.px-star{position:absolute;width:3px;height:3px;background:#fff;}
+
+/* HP BOXES */
+.hp-box{position:absolute;background:var(--box-bg);border:3px solid var(--box-border);box-shadow:3px 3px 0 var(--box-dark);padding:6px 10px 8px;min-width:175px;}
+.hp-name{font-size:.45rem;color:var(--box-dark);margin-bottom:4px;}
+.hp-label{font-size:.38rem;color:var(--box-dark);margin-bottom:3px;}
+.hp-track{width:100%;height:7px;background:#8a7040;border:1px solid var(--box-dark);overflow:hidden;}
+.hp-fill{height:100%;transition:width .6s ease,background-color .4s;background:var(--hp-green);}
+.hp-nums{font-size:.38rem;color:var(--box-dark);text-align:right;margin-top:3px;}
+.enemy-hpbox{top:8px;left:8px;}
+.player-hpbox{bottom:42%;right:8px;}
+
+/* STATUS EFFECT badge */
+.status-badge{display:inline-block;font-size:.3rem;padding:1px 4px;border:1px solid;margin-top:3px;}
+.badge-psn{background:#803080;border-color:#c060c0;color:#f0c0f0;}
+.badge-brn{background:#a04010;border-color:#f08020;color:#ffd090;}
+
+/* SPRITES */
+.sprite{position:absolute;bottom:38%;image-rendering:pixelated;}
+.sprite-enemy{left:8%;}
+.sprite-player{right:12%;}
+
+/* Animations */
+@keyframes shakeL{0%,100%{transform:translateX(0);}20%{transform:translateX(-14px);}40%{transform:translateX(9px);}60%{transform:translateX(-6px);}80%{transform:translateX(3px);}}
+@keyframes shakeR{0%,100%{transform:translateX(0);}20%{transform:translateX(14px);}40%{transform:translateX(-9px);}60%{transform:translateX(6px);}80%{transform:translateX(-3px);}}
+@keyframes atkL{0%,100%{transform:translateX(0);}35%{transform:translateX(50px);}}
+@keyframes atkR{0%,100%{transform:translateX(0);}35%{transform:translateX(-50px);}}
+@keyframes faint{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(70px);}}
+@keyframes flash{0%,100%{filter:none;}50%{filter:brightness(12) saturate(0);}}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.anim-shakeL{animation:shakeL .5s ease;}
+.anim-shakeR{animation:shakeR .5s ease;}
+.anim-atkL{animation:atkL .4s ease;}
+.anim-atkR{animation:atkR .4s ease;}
+.anim-faint{animation:faint .8s ease forwards;}
+.anim-flash{animation:flash .4s ease;}
+.anim-bounce{animation:bounce .6s ease infinite;}
+
+/* Hit particles */
+.hit-p{position:absolute;pointer-events:none;font-size:.5rem;animation:floatUp .9s ease forwards;z-index:20;}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-55px) scale(.5);}}
+
+/* Plague overlay */
+.plague-ov{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:10;transition:opacity .3s;}
+
+/* DIALOGUE */
+.dialogue-box{background:var(--box-bg);border:4px solid var(--box-border);box-shadow:4px 4px 0 var(--box-dark);padding:10px 14px;min-height:72px;}
+.dialogue-text{font-size:clamp(.42rem,1.1vw,.56rem);color:var(--box-dark);line-height:2;}
+.d-cursor{display:inline-block;width:7px;height:7px;background:var(--box-dark);margin-left:3px;animation:blink .8s step-end infinite;vertical-align:middle;}
+
+/* MOVES */
+.actions-box{background:var(--box-bg);border:4px solid var(--box-border);border-top:none;box-shadow:4px 4px 0 var(--box-dark);display:grid;grid-template-columns:1fr 1fr;}
+.move-btn{font-family:'Press Start 2P',monospace;font-size:clamp(.35rem,.9vw,.48rem);background:var(--box-bg);color:var(--box-dark);border:none;border-right:2px solid var(--box-border);border-bottom:2px solid var(--box-border);padding:9px 8px;cursor:pointer;text-align:left;line-height:1.8;}
+.move-btn:nth-child(2n){border-right:none;}
+.move-btn:nth-child(3),.move-btn:nth-child(4){border-bottom:none;}
+.move-btn:hover{background:#d4c888;}
+.move-btn:active{background:#c0b060;}
+.move-btn:disabled{color:var(--gray);cursor:default;background:var(--box-bg);}
+.move-btn::before{content:'▶ ';opacity:0;font-size:.35rem;}
+.move-btn:hover::before{opacity:1;}
+.move-type{font-size:.3rem;padding:1px 4px;border-radius:2px;display:inline-block;margin-left:4px;}
+.type-divine{background:#f0c030;color:#503810;}
+.type-plague{background:#208030;color:#e8f8e8;}
+.type-sea{background:#3090f0;color:#e8f0ff;}
+.type-faith{background:#d060d0;color:#fff0ff;}
+.pp-text{font-size:.3rem;color:var(--gray);}
+
+/* STATUS BAR */
+.status-bar{background:#100808;border:3px solid #302020;padding:5px 12px;display:flex;justify-content:space-between;align-items:center;font-size:.38rem;color:var(--gold);width:100%;}
+
+/* CHAPTER BANNER */
+.ch-banner{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .4s;flex-direction:column;gap:.75rem;}
+.ch-banner.show{opacity:1;pointer-events:all;}
+.banner-title{font-size:clamp(.65rem,1.8vw,.95rem);color:var(--gold);text-shadow:3px 3px 0 var(--gold2);text-align:center;}
+.banner-sub{font-size:clamp(.38rem,1vw,.5rem);color:var(--gray);text-align:center;}
+
+/* END SCREEN */
+#end-screen{display:none;min-height:100vh;width:100%;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;text-align:center;}
+.end-title{font-size:clamp(.7rem,2vw,1.1rem);color:var(--gold);text-shadow:3px 3px 0 var(--gold2);margin-bottom:1.5rem;line-height:1.8;white-space:pre-line;}
+.score-card{background:var(--box-bg);border:4px solid var(--box-border);box-shadow:4px 4px 0 var(--box-dark);padding:1.25rem 1.5rem;max-width:480px;width:100%;margin:0 auto 1.5rem;}
+.score-card h3{font-size:.5rem;color:var(--box-dark);margin-bottom:.75rem;border-bottom:2px solid var(--box-border);padding-bottom:.4rem;}
+.score-row{display:flex;justify-content:space-between;font-size:.4rem;color:var(--box-dark);margin-bottom:.4rem;line-height:1.8;}
+.score-total{font-size:.6rem;color:var(--box-dark);border-top:2px solid var(--box-border);padding-top:.6rem;margin-top:.4rem;text-align:right;}
+.fact-panel{background:#101820;border:3px solid #304050;padding:1rem 1.25rem;max-width:480px;width:100%;margin:0 auto 1.5rem;text-align:left;}
+.fact-panel h3{font-size:.38rem;color:var(--blue);margin-bottom:.6rem;letter-spacing:.1em;}
+.fact-item{font-family:'Crimson Pro',Georgia,serif;font-size:.82rem;color:#a0c8d8;line-height:1.7;margin-bottom:.6rem;padding-left:.75rem;border-left:2px solid var(--blue);}
+</style>
+</head>
+<body>
+
+<!-- TITLE -->
+<div id="title-screen">
+  <div class="title-logo">MOSES<br>VS<br>PHARAOH</div>
+  <div class="title-sub">★ THE EXODUS BATTLE ★</div>
+  <div class="title-art" id="title-art"></div>
+  <button class="title-btn" onclick="startGame()">▶ START GAME</button>
+  <div style="font-size:.38rem;color:var(--gray);margin-bottom:.75rem;max-width:380px;line-height:2.2;font-family:'Crimson Pro',serif;font-style:italic;">
+    Fight Pharaoh across 4 epic battles using God's plagues!<br>Each victory teaches real history from the Book of Exodus.
+  </div>
+  <div class="press-start">— PRESS START —</div>
+</div>
+
+<!-- GAME -->
+<div id="game-screen">
+  <div class="status-bar">
+    <span id="status-chapter">CHAPTER 1</span>
+    <span>⚔ EXODUS BATTLE</span>
+    <span id="status-score">SCORE: 0</span>
+  </div>
+
+  <div class="battle-scene" id="battle-scene">
+    <div id="px-stars"></div>
+    <div class="ground"></div>
+    <div class="plague-ov" id="plague-ov"></div>
+
+    <!-- Enemy HP -->
+    <div class="hp-box enemy-hpbox">
+      <div class="hp-name" id="enemy-name">PHARAOH LV.40</div>
+      <div class="hp-label">HP</div>
+      <div class="hp-track"><div class="hp-fill" id="enemy-hp-fill" style="width:100%"></div></div>
+      <div class="hp-nums" id="enemy-hp-nums">80/80</div>
+      <div id="enemy-status"></div>
+    </div>
+
+    <!-- Sprites -->
+    <canvas id="sprite-enemy" class="sprite sprite-enemy" width="100" height="120"></canvas>
+    <canvas id="sprite-player" class="sprite sprite-player" width="90" height="110"></canvas>
+
+    <!-- Player HP -->
+    <div class="hp-box player-hpbox">
+      <div class="hp-name">MOSES LV.80</div>
+      <div class="hp-label">HP</div>
+      <div class="hp-track"><div class="hp-fill" id="player-hp-fill" style="width:100%"></div></div>
+      <div class="hp-nums" id="player-hp-nums">100/100</div>
+    </div>
+  </div>
+
+  <div class="dialogue-box">
+    <div class="dialogue-text" id="dialogue-text">What will MOSES do?<span class="d-cursor"></span></div>
+  </div>
+
+  <div class="actions-box" id="actions-box">
+    <button class="move-btn" id="move0" onclick="useMove(0)"></button>
+    <button class="move-btn" id="move1" onclick="useMove(1)"></button>
+    <button class="move-btn" id="move2" onclick="useMove(2)"></button>
+    <button class="move-btn" id="move3" onclick="useMove(3)"></button>
+  </div>
+</div>
+
+<!-- END -->
+<div id="end-screen">
+  <div class="end-title" id="end-title"></div>
+  <div class="score-card">
+    <h3>BATTLE RESULTS</h3>
+    <div id="score-rows"></div>
+    <div class="score-total" id="score-total"></div>
+  </div>
+  <div class="fact-panel">
+    <h3>📜 EXODUS HISTORY UNLOCKED</h3>
+    <div id="fact-list"></div>
+  </div>
+  <button class="title-btn" onclick="location.reload()">▶ PLAY AGAIN</button>
+</div>
+
+<!-- Chapter banner -->
+<div class="ch-banner" id="ch-banner">
+  <div class="banner-title" id="banner-title"></div>
+  <div class="banner-sub" id="banner-sub"></div>
+</div>
+
+<script>
+/* ══ SPRITE DRAWING ══ */
+function drawPharaoh(canvas, hp, maxHp) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const ratio = hp / maxHp;
+  const hurt = ratio < 0.4;
+  const px = 3;
+
+  // Nemes headdress sides
+  ctx.fillStyle = '#2040c0';
+  ctx.fillRect(px*3, px*5, px*4, px*13);
+  ctx.fillRect(px*13, px*5, px*4, px*13);
+  // Crown top
+  ctx.fillStyle = '#4060e0';
+  ctx.fillRect(px*5, px*1, px*10, px*6);
+  // Gold stripe
+  ctx.fillStyle = '#f0c030';
+  ctx.fillRect(px*5, px*5, px*10, px*2);
+  // Uraeus snake on crown
+  ctx.fillStyle = '#e03020';
+  ctx.fillRect(px*9, 0, px*2, px*3);
+  ctx.fillStyle = '#f0c030';
+  ctx.fillRect(px*8, px*1, px*4, px*1);
+  // Face
+  ctx.fillStyle = hurt ? '#c07050' : '#d8a070';
+  ctx.fillRect(px*5, px*6, px*10, px*8);
+  // Kohl eye makeup
+  ctx.fillStyle = '#101010';
+  ctx.fillRect(px*7, px*8, px*2, px*2);
+  ctx.fillRect(px*11, px*8, px*2, px*2);
+  ctx.fillRect(px*6, px*9, px*2, px*1);
+  ctx.fillRect(px*12, px*9, px*2, px*1);
+  // Mouth
+  ctx.fillStyle = '#803020';
+  if (hurt) {
+    ctx.fillRect(px*8, px*12, px*4, px*1);
+    ctx.fillRect(px*7, px*11, px*1, px*1);
+    ctx.fillRect(px*12, px*11, px*1, px*1);
+  } else {
+    ctx.fillRect(px*8, px*11, px*4, px*1);
+  }
+  // Pharaoh beard
+  ctx.fillStyle = '#f0c030';
+  ctx.fillRect(px*8, px*13, px*4, px*5);
+  // White robe
+  ctx.fillStyle = '#f0f0d0';
+  ctx.fillRect(px*4, px*17, px*12, px*14);
+  // Gold collar
+  ctx.fillStyle = '#f0c030';
+  ctx.fillRect(px*4, px*17, px*12, px*2);
+  // Belt
+  ctx.fillStyle = '#f0c030';
+  ctx.fillRect(px*4, px*27, px*12, px*2);
+  // Crook arm left
+  ctx.fillStyle = '#f0c030';
+  ctx.fillRect(px*2, px*19, px*2, px*10);
+  ctx.fillRect(px*16, px*19, px*2, px*10);
+  ctx.fillStyle = '#c02020';
+  ctx.fillRect(px*1, px*17, px*2, px*4);
+  ctx.fillRect(px*17, px*17, px*2, px*4);
+  // Legs
+  ctx.fillStyle = '#e0e0c0';
+  ctx.fillRect(px*5, px*31, px*4, px*5);
+  ctx.fillRect(px*11, px*31, px*4, px*5);
+  // Sandals
+  ctx.fillStyle = '#c0a030';
+  ctx.fillRect(px*4, px*35, px*6, px*2);
+  ctx.fillRect(px*10, px*35, px*6, px*2);
+  // Damage cracks if hurt
+  if (hurt) {
+    ctx.fillStyle = 'rgba(220,50,0,0.45)';
+    ctx.fillRect(px*7, px*19, px*1, px*9);
+    ctx.fillRect(px*13, px*18, px*1, px*7);
+  }
+}
+
+function drawMoses(canvas, hp, maxHp) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const ratio = hp / maxHp;
+  const px = 3;
+
+  // Robe
+  ctx.fillStyle = '#d0c890';
+  ctx.fillRect(px*2, px*15, px*11, px*15);
+  ctx.fillStyle = '#b8aa70';
+  ctx.fillRect(px*2, px*15, px*2, px*15);
+  // White beard
+  ctx.fillStyle = '#e8e8e8';
+  ctx.fillRect(px*3, px*12, px*6, px*6);
+  ctx.fillRect(px*4, px*17, px*4, px*4);
+  // Face
+  ctx.fillStyle = '#c89060';
+  ctx.fillRect(px*3, px*6, px*8, px*9);
+  // Eyes
+  ctx.fillStyle = '#102040';
+  ctx.fillRect(px*4, px*8, px*2, px*2);
+  ctx.fillRect(px*8, px*8, px*2, px*2);
+  // White eyebrows (old!)
+  ctx.fillStyle = '#e8e8e8';
+  ctx.fillRect(px*4, px*7, px*2, px*1);
+  ctx.fillRect(px*8, px*7, px*2, px*1);
+  // Head wrap
+  ctx.fillStyle = '#e0e0d8';
+  ctx.fillRect(px*2, px*4, px*10, px*4);
+  ctx.fillRect(px*1, px*5, px*11, px*3);
+  // Arms
+  ctx.fillStyle = '#c89060';
+  ctx.fillRect(px*0, px*16, px*3, px*7);
+  ctx.fillRect(px*11, px*16, px*3, px*7);
+  // STAFF OF GOD
+  ctx.fillStyle = '#c8a040';
+  ctx.fillRect(px*13, px*3, px*2, px*28);
+  // Staff glow
+  ctx.fillStyle = 'rgba(255,220,80,0.35)';
+  ctx.fillRect(px*12, px*3, px*4, px*28);
+  // Glowing tip
+  ctx.fillStyle = '#fff080';
+  ctx.fillRect(px*12, px*2, px*4, px*3);
+  ctx.fillStyle = 'rgba(255,240,100,0.6)';
+  ctx.fillRect(px*11, px*1, px*6, px*5);
+  // Legs
+  ctx.fillStyle = '#c0b070';
+  ctx.fillRect(px*3, px*29, px*3, px*6);
+  ctx.fillRect(px*8, px*29, px*3, px*6);
+  // Sandals
+  ctx.fillStyle = '#806020';
+  ctx.fillRect(px*2, px*34, px*4, px*2);
+  ctx.fillRect(px*8, px*34, px*4, px*2);
+  // Torn robe if hurt
+  if (ratio < 0.4) {
+    ctx.fillStyle = 'rgba(200,100,50,0.35)';
+    ctx.fillRect(px*2, px*22, px*2, px*5);
+  }
+}
+
+/* ══ TITLE SPRITES ══ */
+function drawTitleSprites() {
+  const div = document.getElementById('title-art');
+  const c1 = document.createElement('canvas');
+  c1.width=100;c1.height=120;c1.style.imageRendering='pixelated';
+  c1.style.width='80px';c1.style.height='96px';
+  drawPharaoh(c1,100,100);
+
+  const vs = document.createElement('div');
+  vs.style.cssText='font-size:1.1rem;color:var(--gold);text-shadow:3px 3px 0 var(--gold2);align-self:center;';
+  vs.textContent='VS';
+
+  const c2 = document.createElement('canvas');
+  c2.width=90;c2.height=110;c2.style.imageRendering='pixelated';
+  c2.style.width='72px';c2.style.height='88px';
+  drawMoses(c2,100,100);
+
+  div.appendChild(c1);div.appendChild(vs);div.appendChild(c2);
+}
+drawTitleSprites();
+
+/* Pixel stars */
+function makeStars() {
+  const el = document.getElementById('px-stars');
+  for (let i=0;i<40;i++){
+    const s=document.createElement('div');
+    s.className='px-star';
+    s.style.left=Math.random()*100+'%';
+    s.style.top=Math.random()*45+'%';
+    s.style.opacity=0.3+Math.random()*0.7;
+    el.appendChild(s);
+  }
+}
+
+/* ══ GAME DATA ══ */
+const CHAPTERS = [
+  {
+    id:0, chapter:"CHAPTER 1", title:"THE BURNING BUSH", sub:"Moses answers the call",
+    enemyName:"PHARAOH LV.40", enemyMaxHp:80,
+    taunt:"I am a god! Who is YOUR god, shepherd?",
+    fact:"Moses was 80 years old when called from the Burning Bush on Mount Horeb (Exodus 3). He had spent 40 years as a shepherd after fleeing Egypt.",
+    moves:[
+      {name:"BURNING STAFF",  type:"divine",power:22,pp:3,typeLabel:"DIVINE", desc:"Moses slams his staff blessed by God!"},
+      {name:"CALL OF GOD",    type:"faith", power:18,pp:4,typeLabel:"FAITH",  desc:"Divine light floods the battlefield!"},
+      {name:"SHEPHERD'S CRY", type:"divine",power:14,pp:5,typeLabel:"DIVINE", desc:"40 years of patience unleashed!"},
+      {name:"SERPENT STAFF",  type:"plague",power:20,pp:3,typeLabel:"PLAGUE", desc:"The staff becomes a great serpent!"},
+    ],
+    eMoves:[
+      {name:"ROYAL DECREE",   power:14,desc:"Pharaoh increases the Hebrew workload!"},
+      {name:"SOLDIER STRIKE", power:19,desc:"Egyptian soldiers advance on Moses!"},
+      {name:"GOLDEN WHIP",    power:16,desc:"The overseer cracks his whip!"},
+    ]
+  },
+  {
+    id:1, chapter:"CHAPTER 2", title:"THE TEN PLAGUES", sub:"God's power shakes Egypt",
+    enemyName:"PHARAOH LV.50", enemyMaxHp:100,
+    taunt:"Let your people go? NEVER! My magicians can match any trick!",
+    fact:"The Ten Plagues each targeted an Egyptian god: blood mocked Hapi (Nile god), darkness mocked Ra (sun god). Each plague proved God's power over Egypt's entire religious system.",
+    moves:[
+      {name:"NILE TURNS RED",  type:"plague",power:25,pp:3,typeLabel:"PLAGUE",desc:"The Nile turns to blood! Fish die everywhere!"},
+      {name:"PLAGUE OF FROGS", type:"plague",power:20,pp:4,typeLabel:"PLAGUE",desc:"Frogs swarm from the Nile into every home!"},
+      {name:"PLAGUE OF GNATS", type:"plague",power:18,pp:5,typeLabel:"PLAGUE",desc:"Gnats rise from the dust across all Egypt!"},
+      {name:"PLAGUE OF BOILS", type:"plague",power:28,pp:2,typeLabel:"PLAGUE",desc:"Painful boils break out on Egyptians!"},
+    ],
+    eMoves:[
+      {name:"HARDENED HEART",  power:12,desc:"Pharaoh refuses — his heart is hardened!"},
+      {name:"MAGIC TRICKS",    power:18,desc:"Royal magicians try to copy the plague!"},
+      {name:"BROKEN PROMISE",  power:22,desc:"Pharaoh breaks his promise again!"},
+    ]
+  },
+  {
+    id:2, chapter:"CHAPTER 3", title:"THE PASSOVER NIGHT", sub:"The angel passes over",
+    enemyName:"PHARAOH LV.60", enemyMaxHp:120,
+    taunt:"The Hebrews will NEVER be free! They are MINE!",
+    fact:"Passover (Pesach) is still celebrated by Jewish families worldwide — over 3,000 years old! The lamb's blood on doorposts is one of the most powerful symbols in religious history. Jesus's Last Supper was a Passover meal.",
+    moves:[
+      {name:"PLAGUE: DARKNESS",type:"plague",power:26,pp:3,typeLabel:"PLAGUE",desc:"3 days of total darkness fall on Egypt!"},
+      {name:"PASSOVER LAMB",   type:"faith", power:30,pp:2,typeLabel:"FAITH", desc:"The angel of God passes over faithful homes!"},
+      {name:"ANGEL OF LORD",   type:"divine",power:35,pp:2,typeLabel:"DIVINE",desc:"The final plague strikes the firstborn!"},
+      {name:"LAMB'S BLOOD",    type:"faith", power:22,pp:4,typeLabel:"FAITH", desc:"Blood on the doorpost shields the Hebrews!"},
+    ],
+    eMoves:[
+      {name:"ROYAL ARMY",      power:20,desc:"Egyptian soldiers surround the Hebrews!"},
+      {name:"FALSE PROMISE",   power:15,desc:"Pharaoh promises freedom then takes it back!"},
+      {name:"CURSE OF RA",     power:28,desc:"Pharaoh calls on Egyptian gods for aid!"},
+    ]
+  },
+  {
+    id:3, chapter:"CHAPTER 4", title:"PARTING THE RED SEA", sub:"The great miracle",
+    enemyName:"PHARAOH LV.70", enemyMaxHp:140,
+    taunt:"AFTER THEM! My 600 chariots will crush them at the water!",
+    fact:"'Yam Suph' (Hebrew for Red Sea) may mean Sea of Reeds. Pharaoh sent 600 elite chariots in pursuit — all were lost when the waters returned. This miracle is referenced over 100 times in the Old Testament.",
+    moves:[
+      {name:"PART THE WATERS", type:"sea",   power:40,pp:2,typeLabel:"SEA",   desc:"Moses raises his staff — the sea SPLITS open!"},
+      {name:"PILLAR OF FIRE",  type:"divine",power:32,pp:3,typeLabel:"DIVINE",desc:"God's pillar of fire blocks the Egyptian army!"},
+      {name:"EAST WIND BLAST", type:"sea",   power:28,pp:3,typeLabel:"SEA",   desc:"A mighty wind drives back the waves!"},
+      {name:"SONG OF MIRIAM",  type:"faith", power:35,pp:2,typeLabel:"FAITH", desc:"Miriam leads the people in songs of praise!"},
+    ],
+    eMoves:[
+      {name:"CHARIOT CHARGE",  power:26,desc:"600 chariots thunder across the sand!"},
+      {name:"CLOSING WATERS",  power:32,desc:"The sea begins to close on the chariots!"},
+      {name:"FINAL PURSUIT",   power:36,desc:"Pharaoh refuses to give up the chase!"},
+    ]
+  }
+];
+
+/* ══ GAME STATE ══ */
+let chapterIdx=0, playerHp=100, playerMaxHp=100;
+let enemyHp=80, enemyMaxHp=80;
+let movePP=[], battling=false, totalScore=0;
+let chapterResults=[];
+
+/* ══ START ══ */
+function startGame(){
+  document.getElementById('title-screen').style.display='none';
+  const gs=document.getElementById('game-screen');
+  gs.style.display='flex';gs.style.flexDirection='column';
+  makeStars();
+  loadChapter(0);
+}
+
+function loadChapter(idx){
+  chapterIdx=idx;
+  const ch=CHAPTERS[idx];
+  playerHp=playerMaxHp=100;
+  enemyHp=enemyMaxHp=ch.enemyMaxHp;
+  movePP=ch.moves.map(m=>m.pp);
+
+  document.getElementById('status-chapter').textContent=ch.chapter;
+  document.getElementById('enemy-name').textContent=ch.enemyName;
+  document.getElementById('enemy-status').innerHTML='';
+  updateBars();
+  setupMoves();
+
+  // Sprite sizes
+  const ec=document.getElementById('sprite-enemy');
+  const pc=document.getElementById('sprite-player');
+  ec.style.width='80px';ec.style.height='96px';
+  pc.style.width='72px';pc.style.height='88px';
+
+  enableMoves(false);
+  showBanner(ch.chapter,ch.title,ch.sub,()=>{
+    setDialogue(ch.taunt,()=>{
+      setTimeout(()=>{
+        setDialogue('What will MOSES do?');
+        enableMoves(true);
+      },500);
+    });
+  });
+}
+
+function setupMoves(){
+  const ch=CHAPTERS[chapterIdx];
+  ch.moves.forEach((m,i)=>{
+    const btn=document.getElementById('move'+i);
+    btn.innerHTML=`${m.name} <span class="move-type type-${m.type}">${m.typeLabel}</span><br><span class="pp-text">PP ${movePP[i]}/${m.pp}</span>`;
+    btn.disabled=false;
+  });
+}
+
+/* ══ BANNER ══ */
+function showBanner(ch,title,sub,cb){
+  const b=document.getElementById('ch-banner');
+  document.getElementById('banner-title').textContent=ch+': '+title;
+  document.getElementById('banner-sub').textContent=sub;
+  b.classList.add('show');
+  setTimeout(()=>{b.classList.remove('show');setTimeout(cb,400);},2200);
+}
+
+/* ══ DIALOGUE ══ */
+function setDialogue(text,cb){
+  const el=document.getElementById('dialogue-text');
+  el.innerHTML='';let i=0;
+  const cursor='<span class="d-cursor"></span>';
+  function type(){
+    if(i<=text.length){el.innerHTML=text.slice(0,i)+cursor;i++;setTimeout(type,26);}
+    else{if(cb)setTimeout(cb,350);}
+  }
+  type();
+}
+
+/* ══ HP BARS ══ */
+function updateBars(){
+  const pr=Math.max(0,playerHp/playerMaxHp);
+  const er=Math.max(0,enemyHp/enemyMaxHp);
+  const pf=document.getElementById('player-hp-fill');
+  pf.style.width=(pr*100)+'%';
+  pf.style.background=pr>.5?'var(--hp-green)':pr>.25?'var(--hp-yellow)':'var(--hp-red)';
+  const ef=document.getElementById('enemy-hp-fill');
+  ef.style.width=(er*100)+'%';
+  ef.style.background=er>.5?'var(--hp-green)':er>.25?'var(--hp-yellow)':'var(--hp-red)';
+  document.getElementById('player-hp-nums').textContent=Math.max(0,playerHp)+'/'+playerMaxHp;
+  document.getElementById('enemy-hp-nums').textContent=Math.max(0,enemyHp)+'/'+enemyMaxHp;
+  drawPharaoh(document.getElementById('sprite-enemy'),enemyHp,enemyMaxHp);
+  drawMoses(document.getElementById('sprite-player'),playerHp,playerMaxHp);
+}
+
+function enableMoves(on){
+  battling=!on;
+  for(let i=0;i<4;i++) document.getElementById('move'+i).disabled=!on;
+}
+
+/* ══ PARTICLE ══ */
+function spawnParticle(x,y,txt,color){
+  const scene=document.getElementById('battle-scene');
+  const p=document.createElement('div');
+  p.className='hit-p';
+  p.style.left=x+'px';p.style.top=y+'px';p.style.color=color;
+  p.textContent=txt;
+  scene.appendChild(p);
+  setTimeout(()=>p.remove(),1000);
+}
+
+/* ══ PLAGUE FLASH ══ */
+function flashPlague(type){
+  const ov=document.getElementById('plague-ov');
+  const colors={plague:'rgba(0,160,0,.35)',divine:'rgba(240,192,48,.4)',sea:'rgba(30,100,220,.45)',faith:'rgba(180,60,200,.35)'};
+  ov.style.background=colors[type]||'rgba(255,255,255,.3)';
+  ov.style.opacity='1';
+  setTimeout(()=>ov.style.opacity='0',380);
+}
+
+/* ══ PLAYER MOVE ══ */
+function useMove(idx){
+  if(battling) return;
+  const ch=CHAPTERS[chapterIdx];
+  const move=ch.moves[idx];
+  if(movePP[idx]<=0){setDialogue('No PP left for '+move.name+'!');return;}
+  movePP[idx]--;
+
+  // Update PP display
+  const btn=document.getElementById('move'+idx);
+  btn.innerHTML=`${move.name} <span class="move-type type-${move.type}">${move.typeLabel}</span><br><span class="pp-text">${movePP[idx]<=0?'<span style="color:#e02020">NO PP</span>':'PP '+movePP[idx]+'/'+move.pp}</span>`;
+
+  enableMoves(false);
+  flashPlague(move.type);
+
+  // Player attacks
+  const pc=document.getElementById('sprite-player');
+  pc.classList.add('anim-atkR');
+  setTimeout(()=>pc.classList.remove('anim-atkR'),450);
+
+  const dmg=move.power+Math.floor(Math.random()*12)-4;
+  enemyHp=Math.max(0,enemyHp-dmg);
+
+  setTimeout(()=>{
+    const ec=document.getElementById('sprite-enemy');
+    ec.classList.add('anim-shakeL','anim-flash');
+    spawnParticle(55,45,'-'+dmg,'#ff4040');
+    setTimeout(()=>ec.classList.remove('anim-shakeL','anim-flash'),520);
+    updateBars();
+    totalScore+=Math.floor(dmg*1.5);
+    document.getElementById('status-score').textContent='SCORE: '+totalScore;
+
+    setDialogue('MOSES used '+move.name+'!\n'+move.desc+'\nDealt '+dmg+' damage!',()=>{
+      if(enemyHp<=0){winChapter();}
+      else{setTimeout(enemyTurn,700);}
+    });
+  },320);
+}
+
+/* ══ ENEMY TURN ══ */
+function enemyTurn(){
+  const ch=CHAPTERS[chapterIdx];
+  const em=ch.eMoves[Math.floor(Math.random()*ch.eMoves.length)];
+  const dmg=em.power+Math.floor(Math.random()*10)-3;
+  playerHp=Math.max(0,playerHp-dmg);
+
+  const ec=document.getElementById('sprite-enemy');
+  ec.classList.add('anim-atkL');
+  setTimeout(()=>ec.classList.remove('anim-atkL'),450);
+
+  setTimeout(()=>{
+    const pc=document.getElementById('sprite-player');
+    pc.classList.add('anim-shakeR','anim-flash');
+    spawnParticle(540,130,'-'+dmg,'#ff8030');
+    setTimeout(()=>pc.classList.remove('anim-shakeR','anim-flash'),520);
+    updateBars();
+    setDialogue('PHARAOH used '+em.name+'!\n'+em.desc+'\nMoses took '+dmg+' damage!',()=>{
+      if(playerHp<=0){loseGame();}
+      else{enableMoves(true);setDialogue('What will MOSES do?');}
+    });
+  },320);
+}
+
+/* ══ WIN CHAPTER ══ */
+function winChapter(){
+  const ch=CHAPTERS[chapterIdx];
+  const ec=document.getElementById('sprite-enemy');
+  ec.classList.add('anim-faint');
+  chapterResults.push({title:ch.chapter+': '+ch.title,won:true,fact:ch.fact});
+  totalScore+=200;
+  document.getElementById('status-score').textContent='SCORE: '+totalScore;
+
+  setDialogue('PHARAOH fainted!\n'+ch.title+' complete!\n+200 pts!',()=>{
+    setTimeout(()=>{
+      ec.classList.remove('anim-faint');
+      if(chapterIdx<CHAPTERS.length-1){loadChapter(chapterIdx+1);}
+      else{showEndScreen(true);}
+    },1000);
+  });
+}
+
+/* ══ LOSE GAME ══ */
+function loseGame(){
+  const pc=document.getElementById('sprite-player');
+  pc.classList.add('anim-faint');
+  enableMoves(false);
+  chapterResults.push({title:CHAPTERS[chapterIdx].chapter+': '+CHAPTERS[chapterIdx].title,won:false,fact:CHAPTERS[chapterIdx].fact});
+  setDialogue('MOSES fainted...\nBut God\'s plan cannot be stopped!\nThe Exodus will still succeed!',()=>{
+    setTimeout(()=>showEndScreen(false),1200);
+  });
+}
+
+/* ══ END SCREEN ══ */
+function showEndScreen(won){
+  document.getElementById('game-screen').style.display='none';
+  const es=document.getElementById('end-screen');
+  es.style.display='flex';
+
+  document.getElementById('end-title').textContent=won
+    ?'★ EXODUS COMPLETE! ★\nTHE HEBREWS ARE FREE!'
+    :'✦ A SETBACK...\nBUT GOD PREVAILS!';
+  document.getElementById('end-title').style.color=won?'var(--gold)':'#f08040';
+
+  const rows=document.getElementById('score-rows');
+  rows.innerHTML='';
+  CHAPTERS.forEach((ch,i)=>{
+    const r=document.createElement('div');
+    r.className='score-row';
+    const res=chapterResults.find(x=>x.title.startsWith(ch.chapter));
+    r.innerHTML=`<span>${ch.chapter}: ${ch.title}</span><span style="color:${res&&res.won?'#58d858':'#e82010'}">${res?(res.won?'★ WIN':'✗ LOSS'):'—'}</span>`;
+    rows.appendChild(r);
+  });
+
+  document.getElementById('score-total').textContent='TOTAL SCORE: '+totalScore;
+
+  const fl=document.getElementById('fact-list');
+  fl.innerHTML='';
+  chapterResults.forEach(r=>{
+    const d=document.createElement('div');
+    d.className='fact-item';
+    d.textContent=r.fact;
+    fl.appendChild(d);
+  });
+}
+</script>
+</body>
+</html>
